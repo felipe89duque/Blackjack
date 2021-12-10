@@ -1,0 +1,301 @@
+\documentclass[prl,showpacs,superscriptaddress,twocolumn,longbibliography]{revtex4-1}
+
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{epsfig}
+\usepackage{bm}% bold math
+\usepackage{mathrsfs}
+\usepackage{multirow}
+\usepackage[all]{xy}
+\usepackage{pbox}
+\usepackage{verbatim}
+\usepackage{braket}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{tikz}
+\usepackage{xcolor}
+\newcommand{\red}[1]{\textcolor{red}{#1}} 
+\usepackage{mathtools}
+\newcommand{\change}[1]{\textcolor{blue}{#1}}
+\usepackage{mathtools}
+%\usepackage{tabstackengine}
+\usepackage{enumerate}   
+
+%\stackMath
+%\usepackage[right]{showlabels}
+%\renewcommand{\showlabelfont}{\scriptsize\bf\color{blue}}
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\Var}{Var}
+\newcommand{\er}[1]{Eq.~\eqref{#1}}
+\newcommand{\ers}[2]{Eqs.~(\ref{#1}-\ref{#2})}
+\newcommand{\era}[2]{Eqs.~(\ref{#1}) and (\ref{#2})}
+\newcommand{\eraa}[3]{Eqs.~(\ref{#1}), (\ref{#2}) and (\ref{#3})}
+\newcommand{\Er}[1]{Equation~\eqref{#1}}
+\newcommand{\Ers}[2]{Equations~(\ref{#1}-\ref{#2})}
+\newcommand{\Era}[2]{Equations~(\ref{#1}) and (\ref{#2})}
+\newcommand{\Eraa}[3]{Equations~(\ref{#1}), (\ref{#2}) and (\ref{#3})}
+
+\newcommand{\jpg}[1]{{\color{magenta}{\bf [JPG: #1]}}}
+\newcommand{\lc}[1]{{\color{Blue}{\bf [LC: #1]}}}
+\newcommand{\mc}[1]{{\color{red}{\bf [MC: #1]}}}
+%\usepackage{ulem}  
+\newcommand{\changeMC}[1]{{\color{red}{ #1}}}
+
+
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\vn}{\mathbf{n}}
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+\newcommand{\vx}{{\bf{x}}}
+
+\newcommand{\W}{\mathbb W}
+\renewcommand{\P}{\mathbb P}
+
+     
+\begin{document}  
+
+\title{Finite time large deviations via matrix product states}
+
+\author{Mari Carmen Ba\~nuls}
+\author{Luke Causer}
+\author{Juan P. Garrahan}
+
+
+
+\begin{abstract}
+Recent work has shown the effectiveness of tensor network methods for computing large deviation functions in constrained stochastic models in the infinite time limit. 
+Here we show that these methods can also be used to study the statistics of dynamical observables at {\em arbitrary finite time}. This is a harder problem because, in contrast to the infinite time case where only the extremal eigenstate of a tilted Markov generator is relevant, for finite time the whole spectrum plays a role. We show that finite time dynamical partition sums can be computed efficiently and accurately in one dimension using matrix product states, and describe how to use such results to generate rare event trajectories on demand. We apply our methods to the Fredrickson-Andersen (FA) and East kinetically constrained models, and to the symmetric simple exclusion process (SSEP), unveiling dynamical phase diagrams in terms of counting field and trajectory time. We also discuss extensions of this method to higher dimensions. 
+\end{abstract}
+
+
+
+
+\maketitle
+
+\noindent {\bf\em Introduction.--}
+Large deviation (LD) theory provides a powerful framework to investigate the statistical fluctuations of time-averaged observables in stochastic systems (for reviews, see e.g. Refs.~\cite{Touchette2009, Garrahan2018, Jack2020, Limmer2021}).
+At long times (assuming finite correlation times)   
+the probabilities of such observables obey a LD principle, and the corresponding scaled cumulant generating function (SCGF, see below) can be retrieved from the leading eigenvalue of the \emph{tilted} (or deformed or biased) generator \cite{Touchette2009}.
+For large systems, estimating this eigenvalue is difficult, so one resorts to sampling the corresponding biased trajectory ensemble via numerical methods such as trajectory importance sampling \cite{Bolhuis2002, Ray2018, Klymko2018, Guyader2020}, population dynamics \cite{Borkar2003, Giardina2006, Lecomte2007b}, optimal control \cite{Jack2010, Nemoto2016, Ferre2018, Ray2018b, Jacobson2019, Das2019, Ray2020}, or machine learning approaches \cite{Oakes2020, Rose2021, Casert2020, Whitelam2020, Das2021, Yan2021}. For lattice models, recent work has focused on the use of tensor network (TN) techniques to approximate the leading eigenvector of the titled generator through variational means \cite{Banuls2019, Helms2019, Causer2020} or power methods \cite{Helms2020}.
+
+A harder problem is that of computing the statistics of time-averaged observables for {\em finite time}. The reason is that away from the long time limit the corresponding dynamical partition sums (i.e., moment generating functions) do not obey a LD principle in time - only obeying an LD principle in space for large sizes - and as a consequence they are not determined only by the leading eigenvalue of the tilted generator, but by their whole spectrum. If time is very short, one can get away with direct sampling, but for intermediate times the usual sampling approaches fall short \cite{Causer2021}. Here we develop a scheme to study these rare events by implementing well-developed TN techniques to simulate time evolution. This allows us to calculate dynamical partition functions for trajectories of arbitrary time extent. Furthermore, we show how to use the results here to directly simulate stochastic trajectories in finite-time tilted ensembles at small computational cost, thus generalising the method of Ref.~\cite{Causer2021}.
+
+We focus for concreteness on one dimensional kinetically constrained models (KCMs) - often used in the modelling of structural glasses \cite{Ritort2003, Chandler2010, Garrahan2011, Garrahan2018} - specifically the Fredrickson-Andersen (FA) \cite{Fredrickson1984} and the East \cite{Jackle1991} models, and on the symmetric simple exclusion process (SSEP). Both KCMs and SEPs display phase transitions in their dynamical LDs in the long-time limit \cite{Garrahan2007, Bodineau2007, Appert-Rolland2008, Garrahan2009, Bodineau2012, Jack2015, Karevski2017}. With the methods developed here we are able to construct the dynamical phase diagram both as a function of counting field and of trajectory time, determining finite time scaling of active-inactive phase transitions in these models, and uncovering the emergence with time of the correlated structure of the active phase in the East model and the SSEP.
+
+\smallskip
+
+\noindent {\bf\em Models.--}
+The three models we consider live in a one dimensional lattice of $N$ sites, with binary variables $n_{j}=0, 1$ for each $j = 1\cdots N$, evolving under continuous-time Markov dynamics with local transitions. The probability for each configuration $\ket{x} = \ket{n_{1}\cdots n_{N}}$ at time $t$, encoded in a vector $\ket{P(t)} = \sum_{x}P(t, x)\ket{x}$, evolves deterministically via a Master equation, 
+$\partial_t \ket{P(t)} = \mathbb{W} \ket{P(t)}$, where $\mathbb{W}$ is the Markov generator. Being a stochastic operator $\mathbb{W}$ has a structure $\mathbb{W} = \mathbb{K} - \mathbb{R}$, with an off-diagonal matrix of transition rates $\mathbb{K}$, and a positive diagonal matrix of escape rates $\mathbb{R}$. 
+
+For the KCMs the generator reads
+\begin{align}
+    \mathbb{W}^{\rm KCM} = \sum_{i} f_{i} \big[ &c\sigma_{i}^{+} + (1-c)\sigma_{i}^{-} 
+    \nonumber \\
+    &- c (1-n_{i}) - (1-c)n_{i} \big],
+    \label{W}
+\end{align}
+where $c\in(0, 1/2]$ defines the site occupation at equilibrium, and $\sigma_{i}^{\pm}$ are the Pauli raising and lowering operators at site $i$. 
+Spin flips are only permitted if the kinetic constraint, $f_{i}$, is satisfied.
+We consider two paradigmatic KCMs, the Fredrickson-Andersen (FA) \cite{Fredrickson1984} model and the East \cite{Jackle1991} model. They are defined by the respective constraint functions
+\begin{align}
+    f_{i}^{{\rm FA}} &= n_{i-1} + n_{i + 1} , 
+    \;\; 
+    f_{i}^{{\rm East}} = n_{i-1} .
+\end{align}
+We consider lattices with open boundary conditions (OBC) to allow for efficient tensor network contractions. For numerical convenience, we choose the fixed boundaries $n_{1} = n_{N} = 1$ for the FA {\footnote{This choice of boundaries has no spontaneous breaking of symmetry at $s\gg0$.}} model and $n_{1} = 1$ for the East model.
+The corresponding stationary states are product states, 
+\begin{align}
+    \ket{{\rm ss^{FA}}} &= \ket{1} \otimes \left[(1-c)\ket{0} + c\ket{1}\right]^{\otimes N-2} \otimes \ket{1},
+    \\
+    \ket{{\rm ss^{East}}} &= \ket{1}\otimes\left[(1-c)\ket{0} + c\ket{1}\right]^{\otimes N-1}.
+\end{align}
+
+The third model we consider is the symmetric simple exclusion process (SSEP) whose generator reads
+\begin{align}
+    \mathbb{W}^{\rm SSEP} = \frac{1}{2} \sum_{i} \big[ &
+    	\sigma_{i}^{+} \sigma_{i+1}^{-} + 
+    	\sigma_{i}^{-} \sigma_{i+1}^{+} 
+	\label{SSEP}
+	\\ & \;\;\;\;	
+		- 
+		(n_{i}+n_{i+1}) + 2 n_{i} n_{i+1} \big]
+		\nonumber
+\end{align}
+For the SSEP we consider OBC such that particles can come in and out at the boundaries with rate $1/4$. The stationary state is $\ket{\rm ss^{\rm SSEP}} = 2^{-N}\ket{-} = 2^{-N}\sum_{x} \ket{x}$, with the ``flat'' state $\bra{-}$ being the leading left eigenvector of each generator above.
+
+\smallskip
+
+\noindent {\bf\em Dynamical rare events and LDs.--}
+We now consider the ensemble of all possible trajectories $\{\omega_{\alpha}\}$ with trajectory time $t$, where $\omega_{\alpha} = \{x_{0} \to x_{t_{1}} \to \cdots \to x_{t}\}$ defines jumps to configurations $x_{t_{k}}$ at times ${t_{k}}$. 
+The probability of observing the value $K(\omega_{\alpha}) = K$ of some time-integrated observable $K$ is 
+\beq
+P_{t}(K) = \sum_{\alpha} \pi(\omega_{\alpha})\delta(K(\omega_{\alpha}) - K) ,
+\label{P}
+\eeq
+where $\pi(\omega_\alpha)$ defines the probability of observing the trajectory. The corresponding moment generating function (or trajectory partition sum) is
+\beq
+    Z_{t}(s) = \sum_{\alpha} \pi(\omega_{\alpha})e^{-sK(\omega_{\alpha})}
+    \label{Z}
+\eeq
+where the \emph{counting field} $s$ is conjugate to the observable. 
+
+For large times, both \ers{P}{Z} take a large deviation (LD) form in time \cite{Touchette2009,  Garrahan2009, Garrahan2007, Lecomte2007}, $P_{t}(K) \asymp e^{-t\varphi(K/t)}$ and $Z_{t}(s) \asymp e^{t\theta(s)}$. The LD rate function $\varphi(K/t)$ and the scaled cumulant generating function (SCGF) $\theta(s)$ play the roles of a trajectory entropy density and a free-energy density, respectively, and are related through the Legrendre transform $\varphi(k) = -\min_{k} \left[\theta(s) + sk\right]$. 
+
+The partition sum \er{Z} can be written as
+\beq
+    Z_{t}(s) = \braket{- | e^{t\mathbb{W}_{s}} | {\rm ss}}
+    \label{ZW}
+\eeq
+in terms of the {\em tilted generator} $\mathbb{W}_{s}$
+\cite{Touchette2009, Garrahan2007, Lecomte2007, Garrahan2009}.
+In what follows we focus on the {\em dynamical activity} \cite{Garrahan2007, Lecomte2007, Garrahan2009, Maes2020}), that is, the total number of spin flips, as a trajectory observable. In this case, $\mathbb{W}_{s} = e^{-s}\mathbb{K} - \mathbb{R}$. While for large times all that is needed to determine \er{ZW} is the dominant eigenstate of $\mathbb{W}_{s}$, for  
+finite times the whole spectrum of $\mathbb{W}_{s}$ is required. 
+
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{fig1.pdf}
+    \caption{\textbf{Demonstration of the methods.} 
+    East model at $c = 0.5$, $N = 100$ and $s = 0.1$.
+    (a) Dynamical activity $\braket{k}$ from {tMPS} (black line), TPS with no auxiliary dynamics (red circles), TPS with the LD eigenvector auxiliary dynamics {via vMPS} (blue squares), and TPS with a {tMPS} reference dynamics (green pentagons).
+    (b) Time-dependent occupations (top) and instantaneous activity (bottom) from MPS time-evolution (black line) from direct sampling with a {tMPS} auxiliary dynamics (green pentagons / bars).
+    }
+    \label{fig: method}
+\end{figure}
+
+
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=1\linewidth]{fig2.pdf}
+    \caption{\textbf{Rare event statistics.} 
+    The rare event statistics for the East model with $c = 0.5$ (top) and the FA model with $c = 0.2$ (middle) and SSEP (bottom).
+    (a) The dynamical activity $k(s, t)$ as a function of $s$ and inverse time $1/t$ for $N = 100$. The red dotted line indicates our estimate of the critical point.
+    (b) The critical point for various system sizes $N\in[10, 200]$. The dotted lines indicate the infinite time value (see Refs.~\cite{Banuls2019, Causer2020}), and the dashed line shows $s_{c}(N, t) \sim t^{-1}$.
+    (c) The same data is shown in (b) but with $s_{c}(N, t)$ scaled by $s_{c}(N)$ and time scaled by $N^{-\alpha}$, where $\alpha$ is the critical exponent extracted from $s_{c}(N)$. The dotted line shows where the y-axis is one, and the dashed line shows $t^{-\beta}$. The sum of both lines is given by the dashed-dotted line.
+    (d) The estimate of the rate function $\Phi_{t}(k)$ defined in \er{rate}. The dashed line shows a Poisson distribution with the equilibrium average as its mean.
+    }
+    \label{fig: scaling}
+\end{figure*}
+
+
+\smallskip
+\noindent {\bf\em Finite time statistics from MPS.--}
+The models we consider obey detailed balance. This allows us to write $\mathbb{W}_{s}$ in a Hermitian form through a similarity transformation independent of $s$ \cite{Garrahan2009}, $\mathbb{H}_{s} = \mathbb{P}^{-1/2}\,\mathbb{W}_{s}\,\mathbb{P}^{1/2}$, where $\mathbb{P}^{1/2}$ is a diagonal matrix of probability amplitudes at equilibrium (for the SSEP, $\mathbb{P}$ is the identity). As a consequence the leading eigenvalue of $\mathbb{H}$ obeys a Rayleigh-Ritz variational principle, {allowing the application of variational methods} such as the density matrix renormalisation group (DMRG) \cite{White1992}. We then write \er{ZW} as
+\beq
+    Z_{t}(s) = \braket{\psi_{0} | e^{t\mathbb{H}_{s}} | {\rm \psi_{0}}},
+    \label{ZH}
+\eeq
+where $\ket{\psi_{0}} = \mathbb{P}^{-1/2}\ket{{\rm ss}} = \left[\bra{-} \mathbb{P}^{1/2}\right]^{\dag}$.
+It is useful to define the time evolved vector $\ket{\psi_{\tau}} = e^{\tau\mathbb{H}_{s}}\ket{\psi_{0}}$ ($\tau \leq t$).
+The partition function can then be written as $Z_{t}(s) = \braket{\psi_{t-\tau} | \psi_{\tau}}$, and in particular can be determined by only evolving the vector by $\tau = t / 2$.
+
+The average dynamical activity (per unit time and site) follows from the partition sum,
+\beq
+    k(s) = -\frac{1}{Nt}\frac{d}{ds} \log(Z_{t}(s)).
+    \label{k}
+\eeq
+We can also calculate time-dependent configurational observables for any $0 \leq \tau \leq t$,
+\begin{align}
+    \braket{O(\tau)}_{s} &= Z_{t}(s)^{-1} \braket{\psi_{0} | e^{(t-\tau)\mathbb{H}_{s}} O e^{\tau\mathbb{H}_{s}} | \psi_{0}}
+    \nonumber
+    \\
+    &= Z_{t}(s)^{-1} \braket{ \psi_{t-\tau}| O | \psi_{\tau}}.
+    \label{O}
+\end{align}
+
+In order to compute the time-evolved state $\ket{\psi_{t}}$ we use methods from quantum many-body {physics}, in particular, matrix product states (MPS) (for reviews, see Refs.~\cite{Schollwoeck2011, Orus2019}). Here we use both {variational optimization of MPS (vMPS, e.g. \cite{Schollwoeck2011, Banuls2019}), and time-evolved MPS (tMPS, e.g. \cite{Verstraete2004b}).
+Notice that for long times, $\ket{\psi_{\tau}}$ becomes close to the leading eigenvector of $\mathbb{W}_{s}$. We exploit this fact to simulate evoluti0n for long times with higher precision, see the Supplemental Material \cite{SM} for details.}
+
+In Ref.~\cite{Causer2021}, we used the MPS approximation (from DMRG) to the ground state of $\mathbb{H}_{s}$ to construct a near-optimal dynamics, which supplemented with trajectory importance sampling (specifically transition path sampling or TPS \cite{Bolhuis2002}), allowed to efficiently simulate trajectories in large time tilted ensembles.
+Here we apply {the same scheme, but} instead use the time-evolved state $\ket{\psi_{t/2}}$. We construct a time-independent dynamics which approximates the optimal (or Doob) dynamics at the centre of finite-time trajectories under tilting \footnote{It is possible also to approximate dynamics at any point in the trajectory. For large times, the state evolved to time $\tau = t/2$ is however the most efficient.}.
+
+Figure \ref{fig: method}(a) compares various sampling {methods} in the East model at $s>0$. The dynamics is active at short times (due to initial conditions) and inactive at large times \cite{Garrahan2007, Garrahan2009, Banuls2019}. We show the activity from the partition sum calculated via MPS time-evolution (black line) as a function of trajectory length. We also show sampling with TPS with the original dynamics (red circles); this method only accounts for the dynamical activity $\braket{k}$ at short times, and fails at long times. 
+The scheme introduced in Ref.~\cite{Causer2021} (blue squares) which uses TPS with the MPS approximation to the long-time optimal (Doob) dynamics
+account for $\braket{k}$ at long times \cite{Causer2021}, but fails at short times. If we replace the ground state of $\mathbb{H}_{s}$ by the time evolved state in the definition of the auxiliary dynamics 
+(green pentagons) we get accurate results for the activity for all trajectory lengths. Despite the fact that the exact Doob dynamics for finite time is in general time-dependent \cite{Chetrite2015}, this latter approach with a time-independent dynamics for each trajectory length $t$ is efficient enough for  TPS to converge to the actual finite-time tilted ensemble, thus correcting any discrepancies. In \cite{SM} we provide a detailed comparison. 
+
+
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\linewidth]{fig3.pdf}
+    \caption{\textbf{Structures in the active phase.} 
+    We show the average occupations at the center of the trajectory $\braket{n_{i}(t/2)}_{s}$ for $s = -0.1$ for the (a) East model and (b) FA models.
+    The left panels of each show the lattice average for a range of $s$ and $t$ with $c = 0.05$, whilst the right panels show the occupations at each site for $c = 0.05$ (top) and $c = 0.5$ (bottom), with $s = -0.1$.
+    We show the same for the SSEP in (c) but with the nearest neighbour correlations $C_{i}(t/2)$. The right panels are for $s=-0.1$ (top) and $s=-1.0$ (bottom).
+    \lc{Hoping to replace (a) with $N = 100$.}
+    }
+    \label{fig: structures}
+\end{figure*}
+
+\smallskip
+\noindent {\bf\em Finite time scaling of active-inactive transition.--}
+The three models we study here display an LD phase transition  \cite{Garrahan2007, Appert-Rolland2008, Garrahan2009, Jack2015} in the long time and large size limit between a dynamical phase where activity is extensive in space and one where activity is subextensive. The finite size scaling analysis of this transition in the long time limit has been studied theoretically \cite{Appert-Rolland2008, Bodineau2012, Bodineau2012b, Nemoto2017, Jack2020b} and numerically \cite{Nemoto2017, Banuls2019}: for finite size the active-inactive transition is smoothed into a sharp crossover located at $s_{c}(N, t=\infty)>0$, which decreases as an inverse power of the system size. In general, however, the location of the transition point depends both on time and size, $s_{c}(N, t)$, but a detailed numerical analysis of the finite time scaling has not been possible to date due to the difficulty of simulating efficiently rare trajectories at intermediate times \cite{Causer2021}. With the approach presented above we can now investigate this issue in detail.
+
+Figure \ref{fig: scaling}(a) shows the 
+dynamical activity $k(s)$ 
+as a function of $s$ and inverse time $t^{-1}$ (East model, top row; FA model, middle; SSEP, bottom). There is a transition from a high activity (light) to low activity (dark) as $s$ is increased which becomes sharper and moves to smaller $s$ with increasing time. The point $s_{c}(N, t)$ (shown by the red dashed line) is that of the peak in the dynamical susceptibility $\chi(s, t) = dk(s)/ds$. These dynamical phase diagrams are reminiscent of those of (first-order) quantum phase transitions \cite{Vojta2003}, with $s$ as an applied field and the inverse time as temperature. 
+
+The scaling of the critical point is shown as a function of (inverse) time for multiple system sizes $N\in[20, 200]$ in column (b) of Fig.~\ref{fig: scaling}. For small times the critical point scales approximately as $s_{c} \sim t^{-1}$ for the three models. When time becomes large enough finite-size effects start to dominate.
+{For simplicity, we use the approximate form}
+\begin{align}
+    s_{c}(N, t) \approx s_{c}(N) + s_{c}(t) ,
+\end{align}
+where $s_{c}(N) \sim N^{-\alpha}$ can be extracted from {vMPS \cite{Banuls2019, Causer2020}}. For the FA and East models the exponent $\alpha > 1$ \cite{Banuls2019}, while for the SSEP we find the expected $\alpha \approx 2$ \cite{Appert-Rolland2008}. 
+In column (c) of Fig.~\ref{fig: scaling} we show how the $s_{c}(N, t)$ curves can be collapsed, allowing us to estimate $s_{c}(t) \sim t^{-\beta}$. We find $\beta \approx 1$ for all models.
+
+
+Also important to the rare event statistics is the probability distribution of the dynamical activity, $P_{t}(K)$. While for finite times
+$Z_{t}(s)$ and $P_{t}(K)$ do not obey a LD principle in time, for large sizes they still obey one in system size, $Z_{t}(s) \asymp e^{N \Theta(s,t)}$ and $P_{t}(K) \asymp e^{- N \Phi_t(K/N)}$. We can therefore obtain the time-dependent rate function $\Phi_t(K)$ through the Legendre transform
+\begin{align}
+    \Phi_t(k) &= - \max_s
+    \left[\Theta(s, t) + s k \right] , 
+    \label{rate}
+\end{align}
+where $\Theta(s,t) = N^{-1} \log Z_{t}(s)$. From the numerical estimate of $Z_{t}(s)$ we can therefore estimate $\Phi_t(K/N)$ for all times. Column (d) of  Fig.~\ref{fig: scaling} shows the corresponding rate functions for system size $N = 100$. For small times, the distribution of the activity is close to Poissonian (dashed line), in agreement with the absence of a transition. As time increases the rate function broadens into the 
+characteristic shape of a first order phase transition \cite{Garrahan2007, Banuls2019}.
+
+
+\smallskip
+\noindent {\bf\em Structure of the active phase.--}
+Long time trajectories with an atypically large activity are known to display an interesting structure in two of the models we consider here \cite{Jack2013, Jack2015, Banuls2019}. Our finite time method allows to study how such structure depends on the trajectory length. 
+
+{
+In Fig.~\ref{fig: structures}(a), we show the average occupation at the mid point of the dynamics. The left panel shows the overall average occupation $\braket{n(t/2)}_{s}$ (the mean occupation in the configuration at time $\tau = t/2$ average over the ensemble of trajectories of total time $t$) as a function of $s$ for various $t$, at $c=0.05$. The panels on the right show the average spatial profile $\braket{n_{i}(t/2)}_{s}$ at $s=-0.1$for 
+$c = 0.05$ (top) and $c = 0.5$ (bottom). In both cases, the average density is spatially featureless at short times, but arranges to maximise activity at long times. For $c = 0.05$ it does so by forming an anti-correlated structure, while these anti-correlations are absent for $c = 0.5$ (cf.\ the long time case \cite{Jack2013}). Figure~\ref{fig: structures}(b) shows the same for the FA model, where there is no appreciable structure forming for small $c$. Notice also from the left panels the longer times needed to reach the LD behaviour in the East compared to the FA model.
+
+In Fig.~\ref{fig: structures}(c) we quantify the local structure of the SSEP in terms of the nearest-neighbour correlations
+\beq
+    C_{i}(t) = \braket{n_{i}n_{i+1}(t)}_{s} - \braket{n_{i}(t)}_{s} \braket{n_{i+1}(t)}_{s},
+\eeq
+and the lattice average $C(t) = (N-1)^{-1}\sum_{i=1}^{N-1} C_{i}(t)$.
+The right panels show a growth of anti-correlated order with increasing trajectory length towards the ``hyperuniform'' arrangement at long times, cf.\ Ref.~\cite{Jack2015}.
+
+
+\smallskip
+\noindent {\bf\em Conclusions.--}
+We have implemented a time evolution scheme using MPS to study the rare events of one dimensional KCMs in finite-time trajectories. In this way we have extended recent efforts on the long-time LD statistics via TNs to the arguably harder problem of the LDs away from the long time limit. We showed how to directly compute dynamical partition sums, and we derived an efficient sampling scheme for finite-time rare trajectories. A next step would be to extend these ideas to dimensions larger than one. A possibility could be to implement sampling through two dimensional TNs, such as PEPS (e.g. \cite{Verstraete2004c, Verstraete2008}), which have already proven useful in studying the LDs in the long-time limit of two dimensional exclusion processes \cite{Helms2020}. While bond dimensions will be limited in this case, using a time evolution scheme like we presented here one could approximate the reference dynamics for the centre of trajectories (i.e. evolve by $e^{t\mathbb{W}_{s}/2}$) alongside a scheme such as TPS to obtain reliable results. We hope to report on such studies in the near future.
+
+
+
+\bigskip
+
+
+
+
+
+
+\bibliography{biblography}
+\bibliographystyle{apsrev4-1}
+
+
+\end{document}
+
+
