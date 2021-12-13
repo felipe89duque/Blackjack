@@ -13,7 +13,7 @@ class Card:
             value = int(name)
         except: # name cannot be converted to int, then it's A,J,Q or K
             if name == 'A':
-                value = [1,11]
+                value = None
             else:
                 value = 10
         return value
