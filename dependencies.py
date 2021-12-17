@@ -20,9 +20,9 @@ class Card:
 
 class Decks:
     
-    def __init__(self,number_of_decks = 'inf'):
+    def __init__(self,number_of_decks = 0):
         
-        if number_of_decks == 'inf': # Create only 1 deck, but re-stack it after each action
+        if number_of_decks == 0: # Create only 1 deck, but re-stack it after each action
             number_of_decks = 1
             self.restack = True
         else:
