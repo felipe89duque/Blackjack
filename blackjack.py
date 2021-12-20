@@ -74,37 +74,53 @@ The program can be forced to stop at any point by pressing Ctrl+C.
     main_menu()
 
 def human_play_episode():
+    global who_is_playing
+    who_is_playing= 'human'
     print('---------------------------------------------')
     print("Welcome fellow human")
-    while True:
-        print("Let's start by choosing the number of decks you want to play with. 0 is equivalent to infinitely many decks (easy version).")
-        num_of_decks = input("# of decks: ")
-        try:
-            num_of_decks = int(num_of_decks)
-            break
-        except:
-            print("Either you didn't understand me, or didn't understand you, let's try this again...")
-    play_episode(num_of_decks,'human')
+    num_of_decks = set_difficulty()
+    play_episode(num_of_decks)
 
 def agent_play_episode():
+    global who_is_playing
+    global agent
+
+    who_is_playing = 'agent'
     print('---------------------------------------------')
     print("Watch and learn, my baby agent is a pro at this game")
-    while True:
-        print("Let's start by choosing the number of decks you want the agent to play with. 0 is equivalent to infinitely many decks (easy version).")
-        num_of_decks = input("# of decks: ")
-        try:
-            num_of_decks = int(num_of_decks)
-            break
-        except:
-            print("Either you didn't understand me, or didn't understand you, let's try this again...")
-    play_episode(num_of_decks,'agent')
+
+    num_of_decks = set_difficulty('the agent')
+    agent = Agent(num_of_decks)
+
+    play_episode(num_of_decks)
 
 def agent_train():
-    print('TODO')
+    global who_is_playing
+    who_is_playing = 'agent'
 
-def play_episode(difficulty,who_is_playing):
+    global agent
     global decks
-    global hands_played
+    global episode_sum
+    global hand_sum
+    global stop_hand
+    global stop_episode
+
+    episode_sum = 0
+    hand_sum = 0
+    stop_hand = False
+    stop_episode = False
+
+    number_of_decks = set_difficulty('the agent')
+    agent = Agent(number_of_decks)
+    decks = Decks(number_of_decks)
+    
+    while stop_episode == False:
+        play_hand()
+        reward = get_hand_score()
+
+def play_episode(difficulty):
+    global who_is_playing
+    global decks
     global episode_sum
     global hand_sum
     global stop_hand
@@ -120,20 +136,25 @@ def play_episode(difficulty,who_is_playing):
     
     while stop_episode == False:
         hands_played += 1
-        play_hand(who_is_playing)
+        print("#######################")
+        print("Hand # %s"%(hands_played))
+        play_hand() 
 
     print("You are out of cards! Your final score is %s\nThank you for playing. :D"%(episode_sum))
 
-def play_hand(who_is_playing):
+def play_hand():
+    global who_is_playing
     global episode_sum
-    global hands_played
 
-    print("#######################")
-    print("Hand # %s"%(hands_played))
     print("Card | Value | Hand sum")
     print("-----------------------")
-    
+
+    reset_hand()
     hit() # First card
+
+    if who_is_playing == 'agent':
+        agent.update_state(hand_sum,last_card.value)
+
     try:
         while True:
             if stop_hand:
@@ -143,21 +164,22 @@ def play_hand(who_is_playing):
             else:
                 action = select_next_action(who_is_playing)
                 do_action(action)
+                if who_is_playing == 'agent':
+                    agent.update_state(hand_sum,last_card.value)
     except NameError:
         print("Something went wrong:")
         raise
 
     print("-----------------------")
     print("Hand score:", hand_score,"\nEpisode score: ",episode_sum,"\n\n")
-    reset_hand()
 
 def select_next_action(who_is_playing):
     if who_is_playing == 'human':
         action = input('(h/s):\t')
     elif who_is_playing == 'agent':
-        raise NameError("TODO: This code does not exist yet.")
+        action = agent.select_next_action() #TODO en la clase Agent
     else:
-        raise NameError("You should not be here!!! There is a bug somewhere!")
+        raise NameError("You should not be here!!! who_is_playing should be 'human' or 'agent'.")
     return action
 
 def do_action(action):
@@ -168,10 +190,12 @@ def do_action(action):
 
 def hit():
     global hand_sum
-    
+    global last_card
+
     check_if_gameover()
     card = decks.draw_card()
-   
+    last_card = card
+
     # Check if A's and give respective value
     if (card.name == 'A'):
         if (hand_sum + 11 > 21):
@@ -216,6 +240,17 @@ def reset_hand():
 
     hand_sum = 0
     stop_hand = False
+
+def set_difficulty(player = ''):
+    while True:
+        print("Let's start by choosing the number of decks you want %s to play with. 0 is equivalent to infinitely many decks (easy version)."%(player))
+        num_of_decks = input("# of decks: ")
+        try:
+            num_of_decks = int(num_of_decks)
+            break
+        except:
+            print("Either you didn't understand me, or didn't understand you, let's try this again...")
+    return num_of_decks
 
 
 if __name__ == '__main__':

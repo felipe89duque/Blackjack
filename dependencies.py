@@ -51,3 +51,34 @@ class Decks:
             self.cards = np.delete(self.cards,card_index)
 
         return card
+
+class Agent:
+
+    def __init__(self, number_of_decks):
+        # Maybe we come up with different RL solutions depending on if the agent
+        # plays with finite or infinite decks.
+
+        self.difficulty = self.__set_difficulty(number_of_decks)
+        self.policy = 'TODO: create policy file'
+        self.actions = ['h','s']
+
+    def __set_difficulty(self,number_of_decks):    
+        if number_of_decks == 0:
+            difficulty = 'easy'
+        else:
+            difficulty = 'hard'
+        
+        return difficulty
+    
+    def select_next_action(self):
+        #TODO for now it always hits if the hand sum is less than 19 
+        if self.state[0] <= 17:
+            return self.actions[0]
+        else:
+            return self.actions[1]
+    
+    def update_state(self, hand_sum, value_last_card):
+        self.state = [hand_sum, value_last_card]
+
+    def learn_from_action(self, state, action, next_state):
+        pass
