@@ -1,257 +1,74 @@
 from dependencies import *
 
-
-def main_menu():
-    print('''########################################
-Welcome to the simplified Blackjack game!
-#########################################''')
-    print('''Machine learning in science 1, PHYS4035
-Authors: 
-- Felipe Duque-Quiceno, Student ID 20377858
-- Balázs Nyíro, Student ID (Add)''')
-    print('----------------------------------------------')
-    print('''
-1. To read the rules and learn how to use this program, press '1' followed by 'Enter'.
-2. To play yourself, press '2' followed by 'Enter'.
-3. To let the trained RL agent play, press '3' followed by 'Enter'.
-4. To train the RL agent, press '4' followed by 'Enter'.
-NOTE: you can force the program to stop at any point by pressing 'Ctrl'+'C' ''')
-    print('----------------------------------------------')
-    print('Please enter your choice to proceed')
-    action = input()
-    if action == '1':
-        instructions()
-    elif action == '2':
-        human_play_episode()
-    elif action == '3':
-        agent_play_episode()
-    elif action == '4':
-        agent_train()
-    else:
-        print('Illegal action! Learn how to follow instructions and try again. >:(')
-
-def instructions():
-    print('---------------------------------------------')
-    print("Rules:")
-    print('''
-- There is only one player (either you OR a trained agent).
-- The game is played with D decks of Poker (52 cards per deck: 2-10 plus
-  J/Q/K/A per suit).
-- You choose the number of decks D (infinite decks is a possibility). 
-- The value of each card is its number. J, Q and K have all a value of 10.
-- Aces have a value of 11 unless the hand sum goes over 21, then its
-  value is of 1.
-- The game lasts until all cards are used.
-- The aim of the game is to maximize the accumulated score. This is the addition
-  of the score of all hands played.
-- The score of a hand is: the square of the hand sum, if this is lower or equal
-  to 21; 0 if the hand sum goes over 21... In other words, try to get as close
-  to 21 as possible without passing it.
-- Whenever a new card is dealt, its value is added to the hand sum.
-- When a card is dealt, there are two possible actions to choose from: Hit (h)
-  or Stick (s). Hit means that a new card will be dealt, Stick means that the
-  hand will end at the current hand sum.\n\n''')
-
-    print("How to use the program:")
-    print('''
-At the main menu, choose whether you want to play blackjack, or see how a
-reinforcement learning (RL) trained agent plays by itself. In any case, you then
-must choose the number of decks of cards to play with. To play with infinitely
-many cards, choose '0' as the number of decks (You may want to play in this
-setting as the 'easy' version, as the likelyhood of any card being dealt does
-not change over time). 
-
-At this point, an episode of blackjack will start. If you chose to see the
-agent play, enjoy. If you chose to play yourself, bare in mind that after each
-card deal you must select the next action (hit or stick). 
-- For Hit, enter the character 'h' followed by 'Enter'.
-- For Stick, enter the character 's' followed bu 'Enter'.
-
-The program can be forced to stop at any point by pressing Ctrl+C.
-''')
-    print("Press 'Enter' to go back to the main menu")
-    _ = input()
-    main_menu()
-
-def human_play_episode():
-    global who_is_playing
-    who_is_playing= 'human'
-    print('---------------------------------------------')
-    print("Welcome fellow human")
-    num_of_decks = set_difficulty()
-    play_episode(num_of_decks)
-
-def agent_play_episode():
-    global who_is_playing
-    global agent
-
-    who_is_playing = 'agent'
-    print('---------------------------------------------')
-    print("Watch and learn, my baby agent is a pro at this game")
-
-    num_of_decks = set_difficulty('the agent')
-    agent = Agent(num_of_decks)
-
-    play_episode(num_of_decks)
-
-def agent_train():
-    global who_is_playing
-    who_is_playing = 'agent'
-
-    global agent
-    global decks
-    global episode_sum
-    global hand_sum
-    global stop_hand
-    global stop_episode
-
-    episode_sum = 0
-    hand_sum = 0
-    stop_hand = False
-    stop_episode = False
-
-    number_of_decks = set_difficulty('the agent')
-    agent = Agent(number_of_decks)
-    decks = Decks(number_of_decks)
-    
-    while stop_episode == False:
-        play_hand()
-        reward = get_hand_score()
-
-def play_episode(difficulty):
-    global who_is_playing
-    global decks
-    global episode_sum
-    global hand_sum
-    global stop_hand
-    global stop_episode
-
-    episode_sum = 0
-    hand_sum = 0
-    stop_hand = False
-    stop_episode = False
-
-    decks = Decks(difficulty)
-    hands_played = 0 # Number of hands played
-    
-    while stop_episode == False:
-        hands_played += 1
-        print("#######################")
-        print("Hand # %s"%(hands_played))
-        play_hand() 
-
-    print("You are out of cards! Your final score is %s\nThank you for playing. :D"%(episode_sum))
-
-def play_hand():
-    global who_is_playing
-    global episode_sum
-
-    print("Card | Value | Hand sum")
-    print("-----------------------")
-
-    reset_hand()
-    hit() # First card
-
-    if who_is_playing == 'agent':
-        agent.update_state(hand_sum,last_card.value)
-
+def episode(player, decks, training = False):
     try:
+        hand_sum = 0
+        episode_score = 0
+        action = 'h'
+        num_of_hands = 0
+        
+        hand_history = []
+
+        print_next_hand(num_of_hands)
+
         while True:
-            if stop_hand:
-                hand_score = get_hand_score()
-                episode_sum += hand_score
-                break
+            if len(hand_history) == 0:
+                action = 'h'
             else:
-                action = select_next_action(who_is_playing)
-                do_action(action)
-                if who_is_playing == 'agent':
-                    agent.update_state(hand_sum,last_card.value)
-    except NameError:
-        print("Something went wrong:")
-        raise
+                action = player.select_next_action()
+            
+            if action == 'h':
+                card = decks.draw_card()
+                card.assign_value_if_A(hand_sum) #TODO: As value changes through hand
+                hand_sum += card.value
 
-    print("-----------------------")
-    print("Hand score:", hand_score,"\nEpisode score: ",episode_sum,"\n\n")
+                hand_history += [[action, card, hand_sum]]
+                print("%s \t %s \t %s"%(card.name, card.value, hand_sum))
+                if hand_sum >=21:
+                    end_hand = True
+                else:
+                    end_hand = False
+            elif action == 's':
+                end_hand = True
 
-def select_next_action(who_is_playing):
-    if who_is_playing == 'human':
-        action = input('(h/s):\t')
-    elif who_is_playing == 'agent':
-        action = agent.select_next_action() #TODO en la clase Agent
-    else:
-        raise NameError("You should not be here!!! who_is_playing should be 'human' or 'agent'.")
-    return action
+            # The player updates its state according to the last step
+            player.update_state(hand_history[-1])
 
-def do_action(action):
-    if action =='h':
-        hit()
-    elif action == 's':
-        stick()
+            if end_hand:
+                hand_score = get_hand_score(hand_sum)
+                episode_score += hand_score
+                print_end_of_hand(hand_score,episode_score)
+                hand_history = []
+                end_hand = False
 
-def hit():
-    global hand_sum
-    global last_card
+                if training:
+                    player.learn(hand_history)
 
-    check_if_gameover()
-    card = decks.draw_card()
-    last_card = card
+                num_of_hands += 1
+                hand_sum = 0
+                print_next_hand(num_of_hands)
+    except:
+        print("Final score: %s"%(episode_score))
+        #raise
 
-    # Check if A's and give respective value
-    if (card.name == 'A'):
-        if (hand_sum + 11 > 21):
-            card.value = 1
-        else:
-            card.value = 11
-
-    hand_sum += card.value
-    check_if_gameover()
-
-    print( card.name,'\t', card.value,'\t', hand_sum)
-
-def stick():
-    global stop_hand
-    stop_hand = True
-
-def check_if_gameover():
-    global stop_hand
-    global stop_episode
-
-    # Check if the sum is equal or over 21
-    if (hand_sum >= 21):
-        stop_hand = True
-    else:
-        stop_hand = False
-
-    # Check if the decks are empty
-    if decks.cards.size == 0:
-        stop_hand = True
-        stop_episode = True
-
-def get_hand_score():
+def get_hand_score(hand_sum):
     if (hand_sum <= 21):
         hand_score = hand_sum**2
     else:
         hand_score = 0
     return hand_score
 
-def reset_hand():
-    global hand_sum
-    global stop_hand
+def print_end_of_hand(hand_score,episode_score):
+    print("Hand score: %s | Episode score: %s"%(hand_score,episode_score))
 
-    hand_sum = 0
-    stop_hand = False
-
-def set_difficulty(player = ''):
-    while True:
-        print("Let's start by choosing the number of decks you want %s to play with. 0 is equivalent to infinitely many decks (easy version)."%(player))
-        num_of_decks = input("# of decks: ")
-        try:
-            num_of_decks = int(num_of_decks)
-            break
-        except:
-            print("Either you didn't understand me, or didn't understand you, let's try this again...")
-    return num_of_decks
+def print_next_hand(num_of_hands):
+    print("\n\n")
+    print("________________________")
+    print("Hand # %s:"%(num_of_hands))
+    print("Card  | Value  | Hand sum")
 
 
 if __name__ == '__main__':
-    main_menu()
+    player = Player()
+    decks = Decks(1)
+    episode(player,decks)

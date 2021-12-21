@@ -18,6 +18,13 @@ class Card:
                 value = 10
         return value
 
+    def assign_value_if_A(self,hand_sum):
+        if (self.name == 'A'):
+            if (hand_sum + 11 > 21):
+                self.value = 1
+            else:
+                self.value = 11
+
 class Decks:
     
     def __init__(self,number_of_decks = 0):
@@ -52,15 +59,31 @@ class Decks:
 
         return card
 
-class Agent:
+class Player:
+    def __init__(self):
+        self.actions = ['h','s']
+    
+    def select_next_action(self):
+        action = input('(h/s):\t')
+        return action
 
+    def update_state(self, last_event):
+        last_action = last_event[0]
+        last_card = last_event[1]
+        hand_sum = last_event[2]
+        
+        self.state = hand_sum
+
+    def learn(self,hand_history):
+        pass
+
+class Agent(Player):
     def __init__(self, number_of_decks):
+        super().__init__()
         # Maybe we come up with different RL solutions depending on if the agent
         # plays with finite or infinite decks.
 
         self.difficulty = self.__set_difficulty(number_of_decks)
-        self.policy = 'TODO: create policy file'
-        self.actions = ['h','s']
 
     def __set_difficulty(self,number_of_decks):    
         if number_of_decks == 0:
@@ -72,13 +95,11 @@ class Agent:
     
     def select_next_action(self):
         #TODO for now it always hits if the hand sum is less than 19 
-        if self.state[0] <= 17:
+        if self.state <= 17:
             return self.actions[0]
         else:
             return self.actions[1]
     
-    def update_state(self, hand_sum, value_last_card):
-        self.state = [hand_sum, value_last_card]
 
-    def learn_from_action(self, state, action, next_state):
+    def learn(self, hand_history):
         pass
