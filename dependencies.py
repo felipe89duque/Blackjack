@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import random
 
@@ -67,16 +68,11 @@ class Player:
         
         self.state = hand_sum
 
-    def learn(self,hand_history):
-        pass
-
 class Agent(Player):
     def __init__(self, number_of_decks):
         super().__init__()
-        # Maybe we come up with different RL solutions depending on if the agent
-        # plays with finite or infinite decks.
-
         self.difficulty = self.__set_difficulty(number_of_decks)
+        self.sleep = True
 
     def __set_difficulty(self,number_of_decks):    
         if number_of_decks == 0:
@@ -87,6 +83,8 @@ class Agent(Player):
         return difficulty
     
     def select_next_action(self):
+        if self.sleep:
+            time.sleep(1)
         #TODO for now it always hits if the hand sum is less than 19 
         if self.state <= 17:
             return self.actions[0]

@@ -92,10 +92,11 @@ def agent_play_episode():
 def agent_train():
     num_of_decks = set_difficulty('the agent')
     player, decks = create_player_and_decks('agent', num_of_decks)
-
+    player.sleep = False # train fast
     # TODO while True?
-    episode(player, decks, training = True)
-
+    trajectory = episode(player, decks, training = True)
+    player.learn(trajectory)
+    print(trajectory)
 
 def create_player_and_decks(agent_or_human, number_of_decks):
     if agent_or_human == 'human':
