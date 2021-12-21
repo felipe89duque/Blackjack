@@ -19,11 +19,11 @@ def episode(player, decks, training = False):
             
             if action == 'h':
                 card = decks.draw_card()
-                card.assign_value_if_A(hand_sum) #TODO: As value changes through hand
-                hand_sum += card.value
+                hand_sum = update_hand_sum(card, hand_history)
+                hand_history += [[card, hand_sum]]
 
-                hand_history += [[action, card, hand_sum]]
-                print("%s \t %s \t %s"%(card.name, card.value, hand_sum))
+                print_hit(card, hand_sum)
+
                 if hand_sum >=21:
                     end_hand = True
                 else:
@@ -49,7 +49,36 @@ def episode(player, decks, training = False):
                 print_next_hand(num_of_hands)
     except:
         print("Final score: %s"%(episode_score))
-        #raise
+        raise
+
+def update_hand_sum(card, hand_history):
+    new_hand_sum = 0
+    num_of_aces = 0
+    
+    # Add last card to hand_history, just locally for the function
+    local_hand_history = hand_history + [[card,new_hand_sum]]
+
+    for i in range(len(local_hand_history)):
+        past_card = local_hand_history[i][0]
+        if past_card.name == 'A':
+            # Count all aces in hand; at the end if possible, add 10 as
+            # many times as allowed
+            num_of_aces += 1
+
+        new_hand_sum = new_hand_sum + past_card.value
+    
+    for j in range(num_of_aces):
+        if new_hand_sum <= 11:
+            new_hand_sum += 10
+    
+    return new_hand_sum
+
+def print_hit(card, hand_sum):
+    if card.name == 'A':
+        print("%s\t %s/11\t%s"%(card.name, card.value, hand_sum))
+    else:
+        print("%s\t %s\t%s"%(card.name, card.value, hand_sum))
+
 
 def get_hand_score(hand_sum):
     if (hand_sum <= 21):
@@ -65,7 +94,8 @@ def print_next_hand(num_of_hands):
     print("\n\n")
     print("________________________")
     print("Hand # %s:"%(num_of_hands))
-    print("Card  | Value  | Hand sum")
+    print("Card\tValue\tHand sum")
+    print("------------------------")
 
 
 if __name__ == '__main__':

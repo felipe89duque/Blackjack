@@ -13,17 +13,11 @@ class Card:
             value = int(name)
         except: # name cannot be converted to int, then it's A,J,Q or K
             if name == 'A':
-                value = None
+                value = 1
             else:
                 value = 10
         return value
 
-    def assign_value_if_A(self,hand_sum):
-        if (self.name == 'A'):
-            if (hand_sum + 11 > 21):
-                self.value = 1
-            else:
-                self.value = 11
 
 class Decks:
     
@@ -68,9 +62,8 @@ class Player:
         return action
 
     def update_state(self, last_event):
-        last_action = last_event[0]
-        last_card = last_event[1]
-        hand_sum = last_event[2]
+        last_card = last_event[0]
+        hand_sum = last_event[1]
         
         self.state = hand_sum
 
