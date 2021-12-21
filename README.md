@@ -10,6 +10,6 @@ the program:
 2. random
 
 ## Files' description
-- **blackjack.py**: Contains the logic of the blackjack game. This is the file
-  you should run.
-- **dependencies.py**: This file contains the logic for the Card and Deck classes.
+- **main.py**: Runs the Command Line Interface (CLI) for the program. This is the file you should run
+- **blackjack.py**: Contains the logic of the blackjack game. 
+- **dependencies.py**: This file contains the logic for the classes used throughout the program (i.e. Card, Deck, Player).
