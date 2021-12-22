@@ -3,22 +3,23 @@ from blackjack import *
 
 def main_menu():
     print('''
-#################################################################################
+\033[1m#################################################################################
 
 Welcome to the simplified Blackjack game!
 
-#################################################################################''')
+#################################################################################\033[0m''')
     print('''Machine learning in science 1, PHYS4035
+\033[3mUniversity of Nottingham\033[0m
 Authors: 
 - Felipe Duque-Quiceno, Student ID 20377858
 - Balázs Nyíro, Student ID (Add)''')
     print('---------------------------------------------------------------------')
     print('''
-1. To read the rules and learn how to use this program, press '1' followed by ENTER.
-2. To play yourself, press '2' followed by ENTER.
-3. To let the trained RL agent play, press '3' followed by ENTER.
-4. To train the RL agent, press '4' followed by ENTER.
-NOTE: you can force the program to stop at any point by pressing Ctrl+C ''')
+1. Press \033[1m1 + ENTER\033[0m: To read the rules and learn how to use this program.
+2. Press \033[1m2 + ENTER\033[0m: To play yourself.
+3. Press \033[1m3 + ENTER\033[0m: To let the trained RL agent play.
+4. Press \033[1m4 + ENTER\033[0m: To train the RL agent.
+\033[3mNOTE:\033[0m you can force the program to stop at any point by pressing Ctrl+C ''')
     print('---------------------------------------------------------------------')
     print('Please enter your choice to proceed')
     action = input()
