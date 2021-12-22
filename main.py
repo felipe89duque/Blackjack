@@ -2,21 +2,24 @@ from blackjack import *
 
 
 def main_menu():
-    print('''########################################
+    print('''
+#################################################################################
+
 Welcome to the simplified Blackjack game!
-#########################################''')
+
+#################################################################################''')
     print('''Machine learning in science 1, PHYS4035
 Authors: 
 - Felipe Duque-Quiceno, Student ID 20377858
 - Balázs Nyíro, Student ID (Add)''')
-    print('----------------------------------------------')
+    print('---------------------------------------------------------------------')
     print('''
-1. To read the rules and learn how to use this program, press '1' followed by 'Enter'.
-2. To play yourself, press '2' followed by 'Enter'.
-3. To let the trained RL agent play, press '3' followed by 'Enter'.
-4. To train the RL agent, press '4' followed by 'Enter'.
-NOTE: you can force the program to stop at any point by pressing 'Ctrl'+'C' ''')
-    print('----------------------------------------------')
+1. To read the rules and learn how to use this program, press '1' followed by ENTER.
+2. To play yourself, press '2' followed by ENTER.
+3. To let the trained RL agent play, press '3' followed by ENTER.
+4. To train the RL agent, press '4' followed by ENTER.
+NOTE: you can force the program to stop at any point by pressing Ctrl+C ''')
+    print('---------------------------------------------------------------------')
     print('Please enter your choice to proceed')
     action = input()
     if action == '1':
@@ -26,12 +29,13 @@ NOTE: you can force the program to stop at any point by pressing 'Ctrl'+'C' ''')
     elif action == '3':
         agent_play_episode()
     elif action == '4':
-        agent_train()
+        verify_access()
     else:
         print('Illegal action! Learn how to follow instructions and try again. >:(')
+        go_back_to_menu()
 
 def instructions():
-    print('---------------------------------------------')
+    print('---------------------------------------------------------------------')
     print("Rules:")
     print('''
 - There is only one player (either you OR a trained agent).
@@ -64,17 +68,15 @@ not change over time).
 At this point, an episode of blackjack will start. If you chose to see the
 agent play, enjoy. If you chose to play yourself, bare in mind that after each
 card deal you must select the next action (hit or stick). 
-- For Hit, enter the character 'h' followed by 'Enter'.
-- For Stick, enter the character 's' followed bu 'Enter'.
+- For Hit, enter the character 'h' followed by ENTER.
+- For Stick, enter the character 's' followed bu ENTER.
 
 The program can be forced to stop at any point by pressing Ctrl+C.
 ''')
-    print("Press 'Enter' to go back to the main menu")
-    _ = input()
-    main_menu()
+    go_back_to_menu()
 
 def human_play_episode():
-    print('---------------------------------------------')
+    print('---------------------------------------------------------------------')
     print("Welcome fellow human")
     
     num_of_decks = set_difficulty()
@@ -82,7 +84,7 @@ def human_play_episode():
     episode(player, decks)
 
 def agent_play_episode():
-    print('---------------------------------------------')
+    print('---------------------------------------------------------------------')
     print("Watch and learn, my baby agent is a pro at this game")
 
     num_of_decks = set_difficulty('the agent')
@@ -90,27 +92,27 @@ def agent_play_episode():
     episode(player, decks)
 
 def agent_train():
-    num_of_decks = set_difficulty('the agent')
-    player, decks = create_player_and_decks('agent', num_of_decks)
-    player.sleep = False # train fast
+    num_of_decks = int(input("# of decks: ")) 
+    player, decks = create_player_and_decks('agent', num_of_decks, agent_sleep = False)
     # TODO while True?
     trajectory = episode(player, decks, training = True)
     player.learn(trajectory)
     print(trajectory)
+        
 
-def create_player_and_decks(agent_or_human, number_of_decks):
+def create_player_and_decks(agent_or_human, number_of_decks, agent_sleep = True):
     if agent_or_human == 'human':
         player = Player()
     elif agent_or_human == 'agent':
-        player = Agent(number_of_decks)
+        player = Agent(number_of_decks, sleep = agent_sleep)
 
     decks = Decks(number_of_decks)
 
     return (player, decks)
 
-def set_difficulty(player = ''):                                                 
+def set_difficulty(player = '\b'):                                                 
     while True:                                                                  
-        print("Let's start by choosing the number of decks you want %s to play with. 0 is equivalent to infinitely many decks (easy version)."%(player)) 
+        print("\nInsert the number of decks you want %s to play with. 0 is equivalent to infinitely many decks (easy version)."%(player)) 
         num_of_decks = input("# of decks: ")                                     
         try:                                                                     
             num_of_decks = int(num_of_decks)                                     
@@ -118,6 +120,24 @@ def set_difficulty(player = ''):
         except:                                                                  
             print("Either you didn't understand me, or didn't understand you, let's try this again...    ")  
     return num_of_decks 
+
+def verify_access():
+    easy_password = "MLIS2021_Balazs_Felipe"
+    print("Training an agent overrides important data! Insert password to continue ")
+    password= input("Password: ")
+    if password == easy_password:
+        print("Welcome back Sensei, let's train!")
+        agent_train()
+    else:
+        print("Sorry! You don't have access to these functionalities.")
+        go_back_to_menu()
+        
+
+def go_back_to_menu():
+    print("Press ENTER to go back to the main menu.")
+    _ = input()
+    main_menu()
+
 
 if __name__ == '__main__':
     main_menu()

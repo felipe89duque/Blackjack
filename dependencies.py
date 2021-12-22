@@ -62,17 +62,17 @@ class Player:
         action = input('(h/s):\t')
         return action
 
-    def update_state(self, last_event):
-        last_card = last_event[0]
-        hand_sum = last_event[1]
-        
-        self.state = hand_sum
+    def update_state(self, new_state):
+        self.state = new_state
 
 class Agent(Player):
-    def __init__(self, number_of_decks):
+    def __init__(self, number_of_decks, sleep = True):
         super().__init__()
         self.difficulty = self.__set_difficulty(number_of_decks)
-        self.sleep = True
+        
+        # Determine if the agents sleeps before it chooses an action, when
+        # training, it is set False by the constructor
+        self.sleep = sleep       
 
     def __set_difficulty(self,number_of_decks):    
         if number_of_decks == 0:
@@ -86,7 +86,7 @@ class Agent(Player):
         if self.sleep:
             time.sleep(1)
         #TODO for now it always hits if the hand sum is less than 19 
-        if self.state <= 17:
+        if self.state[0] <= 17:
             return self.actions[0]
         else:
             return self.actions[1]
