@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import random
+import pandas as pd
 
 class Card:
 
@@ -56,7 +57,7 @@ class Decks:
 
 class Player:
     def __init__(self):
-        self.actions = ['h','s']
+        self.actions = ['s','h']
     
     def select_next_action(self):
         action = input('(h/s):\t')
@@ -74,6 +75,8 @@ class Agent(Player):
         # training, it is set False by the constructor
         self.sleep = sleep       
 
+        self.policy, self.policy_history = self.__get_policy()
+
     def __set_difficulty(self,number_of_decks):    
         if number_of_decks == 0:
             difficulty = 'easy'
@@ -81,16 +84,35 @@ class Agent(Player):
             difficulty = 'hard'
         
         return difficulty
+
+    def __get_policy(self):
+        try:
+            if self.difficulty == 'easy':
+                policy = pd.read_csv("infinite_decks_tabular.csv",index_col=0)
+                policy_history = pd.read_csv("infinite_decks_tabular_history.csv",index_col=0)
+            else:
+                raise NotImplementedError
+
+            return policy, policy_history
+        except NotImplementedError:
+            print("The agent hasn't been programmed to know how to play with finite decks yet!")
     
     def select_next_action(self):
         if self.sleep:
             time.sleep(1)
-        #TODO for now it always hits if the hand sum is less than 19 
-        if self.state[0] <= 17:
-            return self.actions[0]
-        else:
-            return self.actions[1]
-    
+
+        # Tabular method:
+        try:
+            if self.difficulty == 'easy':
+                hand_sum = self.state[0]
+                action_index = self.policy["action"][self.policy["hand sum"] == hand_sum].values[0]
+
+                return self.actions[action_index]
+            else:
+                raise NotImplementedError
+        
+        except NotImplementedError:
+            print("The agent hasn't been programmed to know how to play with finite decks yet!")
 
     def learn(self, trajectory):
         pass
