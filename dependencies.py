@@ -92,5 +92,5 @@ class Agent(Player):
             return self.actions[1]
     
 
-    def learn(self, hand_history):
+    def learn(self, trajectory):
         pass

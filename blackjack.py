@@ -64,13 +64,18 @@ def episode(player, decks, training = False):
         hand_score = get_hand_score(hand_sum)
         episode_score += hand_score
         
-        # If deck runs out of cards, assign the last state and reward to the
+        flag_to_final_state = -1
+        # Assign the last state and reward to the
         # agent before finishing the episode
-        if len(trajectory[-1]) == 3:
+        if len(trajectory[-1]) == 3: # Deck ran out of cards
             if hand_score > 0:
-                state = get_state(hand_sum, 's')
+                state = get_state(flag_to_final_state, 's')
                 reward = get_reward(state, 's', previous_state)
                 trajectory.append([state, reward])
+        else: # len(trajectory) == 2
+            state = get_state(flag_to_final_state, 's')
+            trajectory[-1][0] = state
+
 
         if training: 
             return trajectory
@@ -103,11 +108,15 @@ def print_card_deal(card, hand_sum):
         print("%s\t %s\t%s"%(card.name, card.value, hand_sum))
 
 def get_state(hand_sum, action):
-    # Go back to state 0 if previous action was 'stick' or if last hand was failed
-    if action == 's' or hand_sum > 21:
-        state = 0
+    if hand_sum == -1:
+        state = -1
     else:
-        state = hand_sum
+        # Go back to state 0 if previous action was 'stick' or if last hand was failed
+        if action == 's' or hand_sum > 21:
+            state = 0
+        else:
+            state = hand_sum
+
     state = np.array([state])
     return state
 
