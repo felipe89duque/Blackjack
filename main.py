@@ -95,10 +95,18 @@ def agent_play_episode():
 def agent_train():
     num_of_decks = int(input("# of decks: ")) 
     player, decks = create_player_and_decks('agent', num_of_decks, agent_sleep = False)
-    # TODO while True?
-    trajectory = episode(player, decks, training = True)
-    player.learn(trajectory)
-    print(trajectory)
+    player.epsilon = 0.1
+
+    N_E = 2 # Number of epochs to train (1 epoch = policy evaluation + policy update)
+    N_T = 3 # Number of trajectories to do before evaluating and updating the policy
+    for epoch in range(N_E):
+        trajectories = []
+        for traj in range(N_T):
+            trajectory = episode(player, decks, training = True)
+            trajectories.append(trajectory)
+
+        #player.learn(trajectories)
+        print(trajectories)
         
 
 def create_player_and_decks(agent_or_human, number_of_decks, agent_sleep = True):

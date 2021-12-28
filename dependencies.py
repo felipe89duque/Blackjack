@@ -67,15 +67,15 @@ class Player:
         self.state = new_state
 
 class Agent(Player):
-    def __init__(self, number_of_decks, sleep = True):
+    def __init__(self, number_of_decks, sleep = True, epsilon = 0):
         super().__init__()
         self.difficulty = self.__set_difficulty(number_of_decks)
         
         # Determine if the agents sleeps before it chooses an action, when
         # training, it is set False by the constructor
         self.sleep = sleep       
-
-        self.policy, self.policy_history = self.__get_policy()
+        self.epsilon = epsilon
+        self.Q = self.__get_state_action_values()
 
     def __set_difficulty(self,number_of_decks):    
         if number_of_decks == 0:
@@ -85,15 +85,14 @@ class Agent(Player):
         
         return difficulty
 
-    def __get_policy(self):
+    def __get_state_action_values(self):
         try:
             if self.difficulty == 'easy':
-                policy = pd.read_csv("infinite_decks_tabular.csv",index_col=0)
-                policy_history = pd.read_csv("infinite_decks_tabular_history.csv",index_col=0)
+                Q = pd.read_csv("tabular_Q.csv",index_col=0)
             else:
                 raise NotImplementedError
 
-            return policy, policy_history
+            return Q
         except NotImplementedError:
             print("The agent hasn't been programmed to know how to play with finite decks yet!")
     
@@ -102,17 +101,42 @@ class Agent(Player):
             time.sleep(1)
 
         # Tabular method:
-        try:
-            if self.difficulty == 'easy':
-                hand_sum = self.state[0]
-                action_index = self.policy["action"][self.policy["hand sum"] == hand_sum].values[0]
+        if self.difficulty == 'easy':
 
-                return self.actions[action_index]
-            else:
-                raise NotImplementedError
-        
-        except NotImplementedError:
+            # epsilon-greedy
+            hand_sum = self.state[0]
+            action_values = self.Q[["action","value"]].loc[self.Q["hand sum"] == hand_sum]
+            
+            max_value = action_values["value"].max()
+            # if both actions have same value, choose randomly
+            action_indices = action_values["action"].loc[action_values["value"]==max_value].values
+            action_index = np.random.choice(action_indices)
+            # epsilon likelihood of exploring
+            if random.random() <= self.epsilon:
+                action_index = 1-action_index
+
+            return self.actions[action_index]
+        else:
             print("The agent hasn't been programmed to know how to play with finite decks yet!")
 
-    def learn(self, trajectory):
-        pass
+    def learn(self, trajectories):
+        # get number of training sessions and add 1
+        with open("tabular_episodes_trained.txt","r") as training_index_file:
+            last_training_index = int(training_index_file.read()) + 1
+
+        
+
+
+        # add new Q to history file
+        Q_last_session = self.Q.copy()
+        Q_last_session["training index"] = last_training_index*np.ones((self.Q.shape[0],),dtype=int)
+        
+        with open("tabular_Q_history.csv","a") as Q_history_file:
+            Q_history_file.write(Q_last_session.to_csv(header=False))
+        with open("tabular_episodes_trained.txt","w") as training_index_file:
+            training_index_file.write(str(last_training_index))
+
+
+
+
+

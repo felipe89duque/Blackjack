@@ -404,3 +404,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# custom files
+reset_tabular_policy.py
