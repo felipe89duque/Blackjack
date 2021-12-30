@@ -104,13 +104,8 @@ class Agent(Player):
         if self.difficulty == 'easy':
 
             # epsilon-greedy
-            hand_sum = self.state[0]
-            action_values = self.Q[["action","value"]].loc[self.Q["hand sum"] == hand_sum]
-            
-            max_value = action_values["value"].max()
-            # if both actions have same value, choose randomly
-            action_indices = action_values["action"].loc[action_values["value"]==max_value].values
-            action_index = np.random.choice(action_indices)
+            action_index, _ = self.__get_max_value_action(self.state)
+
             # epsilon likelihood of exploring
             if random.random() <= self.epsilon:
                 action_index = 1-action_index
@@ -119,24 +114,91 @@ class Agent(Player):
         else:
             print("The agent hasn't been programmed to know how to play with finite decks yet!")
 
-    def learn(self, trajectories):
+    def learn(self, trajectory):
         # get number of training sessions and add 1
         with open("tabular_episodes_trained.txt","r") as training_index_file:
             last_training_index = int(training_index_file.read()) + 1
 
-        
+
+        # find last exploratory action
+        index_last_exploration = 0
+        for i in range(len(trajectory)-1):
+            state = trajectory[i][0]
+
+            action = trajectory[i][2]
+            numeric_action = self.actions.index(action)
+            _, max_value = self.__get_max_value_action(state)
+
+            if max_value != self.__get_state_action_value(state,numeric_action):
+                # Action was chosen non-greedily (exploration)
+                index_last_exploration = i
+
+        # Evaluate trajectory from the end towards the last exploration
+        total_reward = 0
+        for i in range(len(trajectory)-2,index_last_exploration-1,-1):
+            state = trajectory[i][0]
+            hand_sum = state[0]
+            action = trajectory[i][2]
+            numeric_action = self.actions.index(action)
+            self.__increment_times_visited(state, numeric_action)
+            
+            reward = trajectory[i+1][1]
+            total_reward += reward
+            
+            current_value = self.__get_state_action_value(state, numeric_action)
+            n = self.__get_times_visited(state, numeric_action)
+            new_value = current_value + (1/n)*(total_reward - current_value)
+
+            self.__set_new_state_action_value(state, numeric_action, new_value)
+
 
 
         # add new Q to history file
         Q_last_session = self.Q.copy()
-        Q_last_session["training index"] = last_training_index*np.ones((self.Q.shape[0],),dtype=int)
+        Q_last_session.loc[:,"training index"] = last_training_index
         
+        with open("tabular_Q.csv","w") as Q_file:
+            Q_file.write(self.Q.to_csv())
         with open("tabular_Q_history.csv","a") as Q_history_file:
             Q_history_file.write(Q_last_session.to_csv(header=False))
         with open("tabular_episodes_trained.txt","w") as training_index_file:
             training_index_file.write(str(last_training_index))
 
+    def __get_max_value_action(self,state):
+        hand_sum = state[0]
+        action_values = self.Q[["action","value"]].loc[self.Q["hand sum"] == hand_sum]
+        
+        max_value = action_values["value"].max()
+        # if both actions have same value, choose randomly
+        action_indices = action_values["action"].loc[action_values["value"]==max_value].values
+        action_index = np.random.choice(action_indices)
 
+        return action_index, max_value
 
+    def __get_state_action_value(self,state,action):
+        hand_sum = state[0]
+        value = self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+                           (self.Q["action"] == action),\
+                           "value"].values[0]
+        
+        return value
 
+    def __get_times_visited(self,state,action):
+        hand_sum = state[0]
+        times_visited = self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+                                   (self.Q["action"] == action),\
+                                    "times visited"].values[0]
 
+        return times_visited
+
+    def __increment_times_visited(self, state, action):
+        hand_sum = state[0]
+        self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+                   (self.Q["action"] == action),\
+                    "times visited"] += 1
+    
+    def __set_new_state_action_value(self, state, action, new_value):
+        hand_sum = state[0]
+        self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+                   (self.Q["action"] == action),\
+                    "value"] = new_value
