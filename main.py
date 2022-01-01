@@ -97,7 +97,7 @@ def agent_train():
     player, decks = create_player_and_decks('agent', num_of_decks, agent_sleep = False)
     player.epsilon = 0.1
 
-    N_E = 100000 # Number of episodes to train
+    N_E = 500000 # Number of episodes to train
     for i in range(N_E):
         trajectory = episode(player, decks, training = True)
 

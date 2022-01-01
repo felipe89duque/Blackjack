@@ -88,7 +88,7 @@ class Agent(Player):
     def __get_state_action_values(self):
         try:
             if self.difficulty == 'easy':
-                Q = pd.read_csv("tabular_Q.csv",index_col=0)
+                Q = pd.read_csv("tabular_Q_As.csv",index_col=0)
             else:
                 raise NotImplementedError
 
@@ -116,7 +116,7 @@ class Agent(Player):
 
     def learn(self, trajectory):
         # get number of training sessions and add 1
-        with open("tabular_episodes_trained.txt","r") as training_index_file:
+        with open("tabular_As_episodes_trained.txt","r") as training_index_file:
             last_training_index = int(training_index_file.read()) + 1
 
 
@@ -137,7 +137,6 @@ class Agent(Player):
         total_reward = 0
         for i in range(len(trajectory)-2,index_last_exploration-1,-1):
             state = trajectory[i][0]
-            hand_sum = state[0]
             action = trajectory[i][2]
             numeric_action = self.actions.index(action)
             self.__increment_times_visited(state, numeric_action)
@@ -157,16 +156,19 @@ class Agent(Player):
         Q_last_session = self.Q.copy()
         Q_last_session.loc[:,"training index"] = last_training_index
         
-        with open("tabular_Q.csv","w") as Q_file:
+        with open("tabular_Q_As.csv","w") as Q_file:
             Q_file.write(self.Q.to_csv())
-        with open("tabular_Q_history.csv","a") as Q_history_file:
+        with open("tabular_Q_As_history.csv","a") as Q_history_file:
             Q_history_file.write(Q_last_session.to_csv(header=False))
-        with open("tabular_episodes_trained.txt","w") as training_index_file:
+        with open("tabular_As_episodes_trained.txt","w") as training_index_file:
             training_index_file.write(str(last_training_index))
 
     def __get_max_value_action(self,state):
         hand_sum = state[0]
-        action_values = self.Q[["action","value"]].loc[self.Q["hand sum"] == hand_sum]
+        usable_A = state[1]
+
+        action_values = self.Q[["action","value"]].loc[(self.Q["usable A"] == usable_A) &\
+                                                       (self.Q["hand sum"] == hand_sum)]
         
         max_value = action_values["value"].max()
         # if both actions have same value, choose randomly
@@ -177,7 +179,10 @@ class Agent(Player):
 
     def __get_state_action_value(self,state,action):
         hand_sum = state[0]
-        value = self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+        usable_A = state[1]
+
+        value = self.Q.loc[(self.Q["usable A"] == usable_A) &\
+                           (self.Q["hand sum"] == hand_sum) &\
                            (self.Q["action"] == action),\
                            "value"].values[0]
         
@@ -185,7 +190,10 @@ class Agent(Player):
 
     def __get_times_visited(self,state,action):
         hand_sum = state[0]
-        times_visited = self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+        usable_A = state[1]
+
+        times_visited = self.Q.loc[(self.Q["usable A"] == usable_A) &\
+                                   (self.Q["hand sum"] == hand_sum) &\
                                    (self.Q["action"] == action),\
                                     "times visited"].values[0]
 
@@ -193,12 +201,18 @@ class Agent(Player):
 
     def __increment_times_visited(self, state, action):
         hand_sum = state[0]
-        self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+        usable_A = state[1]
+
+        self.Q.loc[(self.Q["usable A"] == usable_A) &\
+                   (self.Q["hand sum"] == hand_sum) &\
                    (self.Q["action"] == action),\
                     "times visited"] += 1
     
     def __set_new_state_action_value(self, state, action, new_value):
         hand_sum = state[0]
-        self.Q.loc[(self.Q["hand sum"] == hand_sum) &\
+        usable_A = state[1]
+
+        self.Q.loc[(self.Q["usable A"] == usable_A) &\
+                   (self.Q["hand sum"] == hand_sum) &\
                    (self.Q["action"] == action),\
                     "value"] = new_value

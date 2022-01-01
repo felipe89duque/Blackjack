@@ -10,7 +10,7 @@ def episode(player, decks, training = False):
         hand_card_history = []
 
         trajectory = []
-        previous_state = get_state(0,'void')
+        previous_state = get_state(0,False,'void')
         first_reward = 0
         trajectory.append([previous_state, first_reward])
 
@@ -26,7 +26,7 @@ def episode(player, decks, training = False):
             if action == 'h':
                 card = decks.draw_card()
                 hand_card_history.append(card)
-                hand_sum = get_hand_sum(hand_card_history)
+                hand_sum, usable_A = get_hand_sum(hand_card_history)
                 print_card_deal(card, hand_sum)
 
                 if hand_sum >21:
@@ -36,7 +36,7 @@ def episode(player, decks, training = False):
             elif action == 's':
                 end_hand = True
 
-            state = get_state(hand_sum, action)
+            state = get_state(hand_sum, usable_A, action)
             reward = get_reward(state, action, previous_state)
             trajectory.append([state, reward])
             previous_state = state
@@ -69,11 +69,11 @@ def episode(player, decks, training = False):
         # agent before finishing the episode
         if len(trajectory[-1]) == 3: # Deck ran out of cards
             if hand_score > 0:
-                state = get_state(flag_to_final_state, 's')
+                state = get_state(flag_to_final_state,usable_A, 's')
                 reward = get_reward(state, 's', previous_state)
                 trajectory.append([state, reward])
         else: # len(trajectory) == 2
-            state = get_state(flag_to_final_state, 's')
+            state = get_state(flag_to_final_state,usable_A, 's')
             trajectory[-1][0] = state
 
 
@@ -95,11 +95,13 @@ def get_hand_sum(hand_card_history):
 
         new_hand_sum += card.value
     
+    usable_A = False
     for j in range(num_of_aces):
         if new_hand_sum <= 11:
             new_hand_sum += 10
+            usable_A = True
     
-    return new_hand_sum
+    return new_hand_sum, usable_A
 
 def print_card_deal(card, hand_sum):
     if card.name == 'A':
@@ -107,17 +109,24 @@ def print_card_deal(card, hand_sum):
     else:
         print("%s\t %s\t%s"%(card.name, card.value, hand_sum))
 
-def get_state(hand_sum, action):
+def get_state(hand_sum, usable_A, action):
+    state = -1*np.ones((2,),dtype=int)
+
     if hand_sum == -1:
-        state = -1
+        state[0] = -1
+        state[1] = 0
     else:
         # Go back to state 0 if previous action was 'stick' or if last hand was failed
         if action == 's' or hand_sum > 21:
-            state = 0
+            state[0] = 0
         else:
-            state = hand_sum
+            state[0] = hand_sum
+        
+        if usable_A:
+            state[1] = 1
+        else:
+            state[1] = 0
 
-    state = np.array([state])
     return state
 
 def get_reward(state, previous_action, previous_state):
