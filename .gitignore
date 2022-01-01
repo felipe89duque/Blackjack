@@ -405,7 +405,3 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# custom files
-tabular_Q_history.csv
-test_tabular_policy.py
-reset_tabular_policy.py
